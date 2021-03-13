@@ -29,10 +29,9 @@ message StopResponse{
 message StatusResponse{
   string error = 1;
   enum status {
-    pending = 0;
-    running = 1;
-    stopped = 2;
-    crashed = 3;
+    running = 0;
+    stopped = 1;
+    crashed = 2;
   }
 }
 
