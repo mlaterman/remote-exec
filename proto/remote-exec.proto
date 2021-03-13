@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+option go_package = "github.com/mlaterman/remote-exec/api";
+
+service Executor {
+  rpc Start(StartProcess) returns (ProcessID);
+  rpc Stop(ProcessID)     returns (StopResponse);
+  rpc Status(ProcessID)   returns (StatusResponse);
+  rpc Output(ProcessID)   returns (stream OutputResponse);
+}
+
+message StartProcess {
+  string cmd = 1;
+  repeated string args = 2;
+  message limits {
+    uint64 cpu = 1;
+    uint64 mem = 2;
+    uint64 io = 3;
+  }
+}
+
+message ProcessID {
+  string id = 1;
+}
+
+message StopResponse{
+}
+
+message StatusResponse{
+  string error = 1;
+  enum status {
+    pending = 0;
+    running = 1;
+    stopped = 2;
+    crashed = 3;
+  }
+}
+
+message OutputResponse {
+  string stdout = 1;
+  string stderr = 2;
+}
