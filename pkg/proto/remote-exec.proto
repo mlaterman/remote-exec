@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option go_package = "github.com/mlaterman/remote-exec/api";
+option go_package = "github.com/mlaterman/remote-exec/pkg/proto";
 
 service Executor {
   rpc Start(StartProcess) returns (ProcessID);
