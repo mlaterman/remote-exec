@@ -29,14 +29,16 @@ message StopResponse{
 }
 
 message StatusResponse{
-  string error = 1;
-  enum status {
-    running = 0;
-    stopped = 1;
-    crashed = 2;
-  }
+  Status status = 1;
+  string error = 2;
 }
 
+enum Status {
+    unset   = 0;
+    running = 1;
+    stopped = 2;
+    crashed = 3;
+}
 message OutputResponse {
   string stdout = 1;
   string stderr = 2;
