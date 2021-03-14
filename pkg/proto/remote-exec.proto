@@ -12,11 +12,13 @@ service Executor {
 message StartProcess {
   string cmd = 1;
   repeated string args = 2;
-  message limits {
-    uint64 cpu = 1;
-    uint64 mem = 2;
-    uint64 io = 3;
-  }
+  ResourceLimit cpu = 3;
+  ResourceLimit mem = 4;
+  ResourceLimit io = 5;
+}
+
+message ResourceLimit {
+  uint64 value = 1;
 }
 
 message ProcessID {
