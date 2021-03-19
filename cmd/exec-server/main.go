@@ -64,7 +64,7 @@ func tlsConfig(certFile, keyFile, caFile string) (*tls.Config, error) {
 	}
 	return &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		ClientAuth:   tls.RequireAnyClientCert,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 		ClientCAs:    pool,
 		MinVersion:   tls.VersionTLS13,
 	}, nil

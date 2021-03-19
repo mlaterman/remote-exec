@@ -10,13 +10,29 @@ import (
 	"io"
 	"log"
 	"os"
-	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	pb "github.com/mlaterman/remote-exec/pkg/proto"
 )
+
+// Args is a type declaration used to collect exec args through flags.
+//
+// i.e.: -arg hello -arg world
+//       should result in ["hello", "world"]`
+type Args []string
+
+// String prints Args as a []string
+func (a *Args) String() string {
+	return fmt.Sprint(*a)
+}
+
+// Set adds a value to Args
+func (a *Args) Set(value string) error {
+	*a = append(*a, value)
+	return nil
+}
 
 func main() {
 	// Client config flags; gather through env vars/file in the future.
@@ -29,7 +45,8 @@ func main() {
 	call := flag.String("call", "status", "The procedure call name. REQUIRED, one of [start,stop,status,output].")
 	id := flag.String("id", "", "The process ID. Required for [stop,status,output].")
 	cmd := flag.String("command", "", "The executable to run. Required for [start].")
-	args := flag.String("args", "", "A comma seperated list of arguments. Optional, used for [start].")
+	var args Args
+	flag.Var(&args, "args", "A a repeatable flag to specify arguments, i.e., \"-args hello -args world\". Optional, used for [start].")
 	cpu := flag.Uint64("cpu", 0, "The CPU time in ms allocated to the process. Optional, used for [start].")
 	mem := flag.Uint64("mem", 0, "The memory quota in bytes allocated to the process. Optional, used for [start].")
 	dio := flag.Uint64("io", 0, "The disk read/write limit in bytes/s allocated to the process. Optional, used for [start].")
@@ -59,7 +76,11 @@ func main() {
 
 	switch *call {
 	case "start":
-		resp, err := client.Start(ctx, startParams(*cmd, *args, *cpu, *mem, *dio))
+		params, err := startParams(*cmd, args, *cpu, *mem, *dio)
+		if err != nil {
+			log.Fatalf("Unable to prepare Start call: %v", err)
+		}
+		resp, err := client.Start(ctx, params)
 		if err != nil {
 			log.Fatalf("Start call failed: %v", err)
 		}
@@ -125,9 +146,6 @@ func passedFlag(name string) bool {
 }
 
 func validateFlags(call string) error {
-	if !passedFlag("call") {
-		return fmt.Errorf("call flag required.")
-	}
 	switch call {
 	case "start":
 		if !passedFlag("command") {
@@ -143,10 +161,13 @@ func validateFlags(call string) error {
 	return nil
 }
 
-func startParams(cmd, args string, cpuFlag, memFlag, ioFlag uint64) *pb.StartProcess {
-	sp := &pb.StartProcess{
-		Cmd:  cmd,
-		Args: strings.Split(args, ","),
+func startParams(cmd string, args Args, cpuFlag, memFlag, ioFlag uint64) (*pb.StartProcess, error) {
+	if cmd == "" {
+		return nil, fmt.Errorf("empty command value")
+	}
+	sp := &pb.StartProcess{Cmd: cmd}
+	if args != nil && len(args) > 0 {
+		sp.Args = args
 	}
 	if passedFlag("cpu") {
 		sp.Cpu = &pb.ResourceLimit{Value: cpuFlag}
@@ -157,5 +178,5 @@ func startParams(cmd, args string, cpuFlag, memFlag, ioFlag uint64) *pb.StartPro
 	if passedFlag("io") {
 		sp.Io = &pb.ResourceLimit{Value: ioFlag}
 	}
-	return sp
+	return sp, nil
 }

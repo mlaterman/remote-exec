@@ -1,3 +1,5 @@
+// test for TLS configuration and certificate validation
+// requires make all-certs to be ran from project root.
 package main
 
 import (
