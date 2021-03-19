@@ -15,10 +15,13 @@ const (
 	certPath   = "../../certs/"
 	clientKey  = certPath + "client-key.pem"
 	clientCert = certPath + "client-cert.pem"
+	clientCA   = certPath + "ca-client-cert.pem"
 	serverKey  = certPath + "server-key.pem"
 	serverCert = certPath + "server-cert.pem"
+	serverCA   = certPath + "ca-server-cert.pem"
 	testKey    = certPath + "test-key.pem"
 	testCert   = certPath + "test-cert.pem"
+	testCA     = certPath + "ca-test-cert.pem"
 )
 
 func clientTLS(t *testing.T, certFile, keyFile, caFile string, version uint16) *tls.Config {
@@ -45,7 +48,7 @@ func clientTLS(t *testing.T, certFile, keyFile, caFile string, version uint16) *
 
 func TestTLSConfig(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		config, err := tlsConfig(testCert, testKey, testCert)
+		config, err := tlsConfig(testCert, testKey, testCA)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -54,7 +57,7 @@ func TestTLSConfig(t *testing.T) {
 		}
 	})
 	t.Run("unable to load key", func(t *testing.T) {
-		_, err := tlsConfig(testCert, "fake.key", testCert)
+		_, err := tlsConfig(testCert, "fake.key", testCA)
 		if err == nil {
 			t.Fatalf("expected an error.")
 		}
@@ -62,7 +65,7 @@ func TestTLSConfig(t *testing.T) {
 }
 
 func TestClientConnection(t *testing.T) {
-	serverTLS, err := tlsConfig(serverCert, serverKey, clientCert)
+	serverTLS, err := tlsConfig(serverCert, serverKey, clientCA)
 	if err != nil {
 		t.Fatalf("Unable to create server TLS config: %v", err)
 	}
@@ -87,14 +90,14 @@ func TestClientConnection(t *testing.T) {
 	}()
 
 	t.Run("Client connection OK", func(t *testing.T) {
-		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, serverCert, tls.VersionTLS13))
+		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, serverCA, tls.VersionTLS13))
 		if err != nil {
 			t.Fatalf("Client connection error: %v", err)
 		}
 		conn.Close()
 	})
 	t.Run("Client connection wrong CA", func(t *testing.T) {
-		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, testCert, tls.VersionTLS13))
+		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, testCA, tls.VersionTLS13))
 		if err != nil && err.Error() != "x509: certificate signed by unknown authority" {
 			t.Fatalf("expected \"x509: certificate signed by unknown authority\" got: %v", err)
 		}
@@ -104,7 +107,7 @@ func TestClientConnection(t *testing.T) {
 		}
 	})
 	t.Run("Client connection wrong cert", func(t *testing.T) {
-		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, testCert, testKey, serverCert, tls.VersionTLS13))
+		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, testCert, testKey, serverCA, tls.VersionTLS13))
 		if err != nil && err.Error() != "cert error" {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -114,7 +117,7 @@ func TestClientConnection(t *testing.T) {
 		}
 	})
 	t.Run("Client connection wrong TLS version", func(t *testing.T) {
-		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, serverCert, tls.VersionTLS12))
+		conn, err := tls.Dial("tcp", l.Addr().String(), clientTLS(t, clientCert, clientKey, serverCA, tls.VersionTLS12))
 		if err != nil && err.Error() != "remote error: tls: protocol version not supported" {
 			t.Fatalf("expected \"remote error: tls: protocol version not supported\", got: %v", err)
 		}
