@@ -6,3 +6,5 @@
 *.cert
 *.key
 *.csr
+*.pem
+*.srl
